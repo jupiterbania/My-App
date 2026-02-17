@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import { Download, Search, LayoutGrid, Smartphone, X, Star, Calendar, ShieldCheck } from 'lucide-react';
+import { Download, Search, LayoutGrid, Smartphone, X, Star, Calendar, ShieldCheck, Share2, Check } from 'lucide-react';
 import { formatBytes, formatNumber } from './utils';
 
 function App() {
@@ -36,6 +36,34 @@ function App() {
       setLoading(false);
     }
   }, []);
+
+  // Configure Deep Linking
+  useEffect(() => {
+    if (apps.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('app');
+      if (appId && !selectedApp) {
+        const foundApp = apps.find(a => a.id === appId);
+        if (foundApp) {
+          setSelectedApp(foundApp);
+        }
+      }
+    }
+  }, [apps]);
+
+  const handleAppClick = (app) => {
+    setSelectedApp(app);
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set('app', app.id);
+    window.history.pushState({}, '', newUrl);
+  };
+
+  const handleCloseApp = () => {
+    setSelectedApp(null);
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.delete('app');
+    window.history.pushState({}, '', newUrl);
+  };
 
   const filteredApps = apps.filter(app =>
     (app.name && app.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -111,7 +139,7 @@ function App() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredApps.map((app) => (
-              <AppCard key={app.id} app={app} onClick={() => setSelectedApp(app)} />
+              <AppCard key={app.id} app={app} onClick={() => handleAppClick(app)} />
             ))}
           </div>
         )}
@@ -129,7 +157,7 @@ function App() {
 
       {/* App Details Modal */}
       {selectedApp && (
-        <AppDetailsModal app={selectedApp} onClose={() => setSelectedApp(null)} />
+        <AppDetailsModal app={selectedApp} onClose={handleCloseApp} />
       )}
     </div>
   )
@@ -198,12 +226,37 @@ function AppCard({ app, onClick }) {
 }
 
 function AppDetailsModal({ app, onClose }) {
+  const [copied, setCopied] = useState(false);
   const iconUrl = app.icon_url || "https://uiapp.store/placeholder-icon.png";
 
   // Format date if it exists
   const releaseDate = app.created_at?.seconds
     ? new Date(app.created_at.seconds * 1000).toLocaleDateString()
     : 'Recently';
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}?app=${app.id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: app.name,
+          text: `Check out ${app.name} on the App Store!`,
+          url: shareUrl
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-8">
@@ -216,16 +269,32 @@ function AppDetailsModal({ app, onClose }) {
       {/* Modal Content */}
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-white/10 rounded-3xl shadow-2xl animate-fade-in-up custom-scrollbar">
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full transition-colors z-20"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        {/* Close & Share Buttons */}
+        <div className="absolute top-4 right-4 flex items-center gap-3 z-20">
+          <button
+            onClick={handleShare}
+            className="p-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-full transition-all group relative"
+            title="Share App"
+          >
+            {copied ? <Check className="w-6 h-6 text-green-400" /> : <Share2 className="w-6 h-6" />}
+
+            {/* Copied Tooltip */}
+            {copied && (
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded shadow-lg whitespace-nowrap animate-fade-in-up">
+                Link Copied!
+              </span>
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
         {/* Header Section */}
-        <div className="relative h-48 sm:h-64 bg-slate-800 overflow-hidden">
+        <div className="relative h-48 sm:h-64 bg-slate-800">
           {/* Banner Image / Gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-slate-900"></div>
 
@@ -246,7 +315,6 @@ function AppDetailsModal({ app, onClose }) {
                 <span className="bg-blue-500/10 text-blue-400 px-2.5 py-0.5 rounded text-sm font-medium border border-blue-500/20">
                   {app.category || 'App'}
                 </span>
-                <span className="text-sm">{app.developer_id || 'Unknown Developer'}</span>
               </div>
             </div>
           </div>
