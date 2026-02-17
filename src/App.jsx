@@ -199,6 +199,10 @@ function AppCard({ app, onClick }) {
               <span>v{app.version || '1.0'}</span>
               <span>•</span>
               <span>{formatBytes(app.size)}</span>
+              <span>•</span>
+              <span className={app.platform === 'iOS' ? 'text-gray-300' : 'text-green-400'}>
+                {app.platform || 'Android'}
+              </span>
             </div>
           </div>
         </div>
@@ -344,12 +348,15 @@ function AppDetailsModal({ app, onClose }) {
           </div>
 
           <a
-            href={app.apk_url}
+            href={app.platform === 'iOS' ? app.ipa_url : app.apk_url}
             download
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-lg font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 active:scale-95"
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 ${app.platform === 'iOS'
+                ? 'bg-slate-700 hover:bg-slate-600'
+                : 'bg-blue-600 hover:bg-blue-500'
+              } text-white text-lg font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 active:scale-95`}
           >
             <Download className="w-5 h-5" />
-            <span>Download APK</span>
+            <span>{app.platform === 'iOS' ? 'Download IPA' : 'Download APK'}</span>
           </a>
         </div>
 
@@ -389,6 +396,7 @@ function AppDetailsModal({ app, onClose }) {
               <h4 className="text-lg font-semibold text-white mb-4">Information</h4>
               <div className="space-y-4">
                 <InfoRow icon={<Calendar className="w-4 h-4" />} label="Released" value={releaseDate} />
+                <InfoRow icon={<Smartphone className="w-4 h-4" />} label="Platform" value={app.platform || 'Android'} />
                 <InfoRow icon={<ShieldCheck className="w-4 h-4" />} label="License" value="Free" />
                 <InfoRow icon={<LayoutGrid className="w-4 h-4" />} label="Category" value={app.category} />
               </div>
