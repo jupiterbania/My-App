@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-900: #121212;
+  --color-dark-800: #1e1e1e;
+  --color-dark-700: #2c2c2c;
+  --color-primary-500: #3b82f6;
+}
+
+@utility glass {
+  @apply bg-slate-800/50 backdrop-blur-md border border-white/10;
+}
+
+body {
+  @apply bg-slate-900 text-white min-h-screen font-sans antialiased;
+}
