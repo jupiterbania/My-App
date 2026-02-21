@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import { Download, Search, LayoutGrid, Smartphone, X, Star, Calendar, ShieldCheck, Share2, Check } from 'lucide-react';
 import { formatBytes, formatNumber } from './utils';
@@ -80,7 +80,7 @@ function App() {
               <div className="bg-blue-600 p-2 rounded-lg shell">
                 <Smartphone className="w-6 h-6 text-white" />
               </div>
-              <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-white">AppStore</span>
+              <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-white">My App Store</span>
             </div>
             {/* Search Bar */}
             <div className="hidden md:flex flex-1 max-w-md mx-8 relative group">
@@ -262,6 +262,17 @@ function AppDetailsModal({ app, onClose }) {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const appRef = doc(db, "apps", app.id);
+      await updateDoc(appRef, {
+        downloads: increment(1)
+      });
+    } catch (err) {
+      console.error("Error incrementing downloads:", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-8">
       {/* Backdrop */}
@@ -349,10 +360,11 @@ function AppDetailsModal({ app, onClose }) {
 
           <a
             href={app.platform === 'iOS' ? app.ipa_url : app.apk_url}
+            onClick={handleDownload}
             download
             className={`w-full sm:w-auto flex items-center justify-center gap-2 ${app.platform === 'iOS'
-                ? 'bg-slate-700 hover:bg-slate-600'
-                : 'bg-blue-600 hover:bg-blue-500'
+              ? 'bg-slate-700 hover:bg-slate-600'
+              : 'bg-blue-600 hover:bg-blue-500'
               } text-white text-lg font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 active:scale-95`}
           >
             <Download className="w-5 h-5" />
